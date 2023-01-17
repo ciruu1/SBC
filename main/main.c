@@ -36,9 +36,11 @@
 #include "pins.h"
 #include "spi_mod.h"
 
-#define FALL_THRESHOLD 25 // Umbral de caída en m/s^2
+#define FALL_THRESHOLD 765 // Umbral de caída en m/s^2
 
 #include "math.h"
+
+#include "telegram.c"
 
 static const int RX_BUF_SIZE = 4096;
 
@@ -52,8 +54,6 @@ static char tag[] = "gps";
 int num = 0;
 
 #define BUTTON_GPIO 12
-
-static const char *TAG = "MQTT_EXAMPLE";
 
 #define I2C_SDA 26
 #define I2C_SCL 25
@@ -276,17 +276,18 @@ void ACL2_task(void * pvParams) {
 
         //Transformacion de los datos recibidos a datos entendibles
 
-        ESP_LOGI(tag, "Valor EjeX = %d ---- EjeY = %d ---- EjeZ = %d \n", resultado_EjeX,resultado_EjeY,resultado_EjeZ);
+        //ESP_LOGI(tag, "Valor EjeX = %d ---- EjeY = %d ---- EjeZ = %d \n", resultado_EjeX,resultado_EjeY,resultado_EjeZ);
 
 /*
     printf("Valor EjeX = %d  --- Valor EjeX_Low = %d\n", X_High,X_Low);
     printf("Valor EjeY_High =  %d --- Valor EjeY_Low = %d\n", y_High, y_Low);
     printf("Valor EjeZ_High =  %d --- Valor EjeZ_Low = %d\n", z_High, z_Low);*/
-        ESP_LOGI(tag, "---------------------------------------------------------------------\n");
+        //ESP_LOGI(tag, "---------------------------------------------------------------------\n");
 
         double magnitude = sqrt(resultado_EjeX*resultado_EjeX + resultado_EjeY*resultado_EjeY + resultado_EjeZ*resultado_EjeZ);
         if (magnitude > FALL_THRESHOLD) {
             ESP_LOGI(TAG, "Posible caída detectada, magnitud de aceleración: %.2f m/s^2", magnitude);
+            https_telegram_sendMessage_perform_post("Posible caída detectada");
         }
 
         vTaskDelay(pdMS_TO_TICKS(300));
@@ -300,7 +301,7 @@ void publishDataNumber(char * key, double number) {
     cJSON_AddNumberToObject(root, key, number); // En la telemetría de Thingsboard aparecerá key = key y value = 0.336
     char *post_data = cJSON_PrintUnformatted(root);
 
-    ESP_LOGI(tag, "Published %.18f", number);
+    //ESP_LOGI(tag, "Published %.18f", number);
 
     // Enviar los datos
     esp_mqtt_client_publish(client, "v1/devices/me/telemetry", post_data, 0, 1, 0); // v1/devices/me/telemetry sale de la MQTT Device API Reference de ThingsBoard
@@ -323,9 +324,11 @@ void get_bpm(void* param) {
 
             // Oximeter
             publishDataNumber("SpO2", result.spO2);
+            O2 = result.spO2;
 
             // BPM
             publishDataNumber("BPM", result.heart_bpm);
+            BPM = result.heart_bpm;
 
         }
         //Update rate: 100Hz
@@ -478,11 +481,10 @@ void init_uart(void)
     uart_set_pin(UART, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 }
 
-double divide_integer_by_100(double num) {
-    double integer_part, decimal_part;
-    decimal_part = modf(num, &integer_part);
-    integer_part /= 100;
-    return integer_part + decimal_part;
+double divide_by_100(double num) {
+    int int_part = (int) num;  // obtenemos la parte entera
+    int_part /= 100;  // dividimos la parte entera por 100
+    return (double) int_part + (num - (int) num);  // sumamos la parte decimal y retornamos el resultado
 }
 
 static void parse(char * line) {
@@ -527,8 +529,13 @@ static void parse(char * line) {
                          frame_gga.time.hours,
                          frame_gga.time.minutes,
                          frame_gga.time.seconds);
-                publishDataNumber("latitude", divide_integer_by_100(((double) minmea_tofloat(&frame_gga.latitude))));
-                publishDataNumber("longitude", divide_integer_by_100(((double) minmea_tofloat(&frame_gga.longitude))));
+                double lat = divide_by_100(((double) minmea_tofloat(&frame_gga.latitude)));
+                double lon = divide_by_100(((double) minmea_tofloat(&frame_gga.longitude)));
+                LATITUD = lat;
+                LONGITUD = lon;
+
+                publishDataNumber("latitude", lat);
+                publishDataNumber("longitude", lon);
             }
             else {
                 ESP_LOGI(tag, "$xxGGA sentence is not parsed\n");
@@ -581,7 +588,8 @@ void button_task(void *pvParameter) {
 
     while (1) {
         if (gpio_get_level(BUTTON_GPIO) == 1) {
-            printf("BUTTON TRIGGERED\n");
+            //printf("BUTTON TRIGGERED\n");
+            https_telegram_sendMessage_perform_post("BOTÓN DE EMERGENCIA ACTIVADO");
             //Esperar a que el botón sea soltado
             //while (gpio_get_level(BUTTON_GPIO) == 0) {};
         }
@@ -651,4 +659,6 @@ void app_main(void)
     // BUTTON
     xTaskCreate(button_task, "button_task", 2048, NULL, configMAX_PRIORITIES-1, NULL);
 
+    // TELEGRAM
+    xTaskCreate(http_test_task, "telegram_task", 8192, NULL, 1, NULL);
 }
