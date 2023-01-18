@@ -417,10 +417,12 @@ static void https_telegram_receiveMessage_perform_post(void) {
 
     esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK) {
+        /*
         ESP_LOGI(TAG3, "HTTP POST Status = %d, content_length = %d",
                  esp_http_client_get_status_code(client),
                  esp_http_client_get_content_length(client));
         ESP_LOGW(TAG3, "Desde Perform el output es: %s", output_buffer);
+         */
 
         cJSON *elem = cJSON_Parse(output_buffer);
         cJSON *result;
@@ -432,9 +434,9 @@ static void https_telegram_receiveMessage_perform_post(void) {
 
         result = cJSON_GetObjectItem(elem, "result");
         message = cJSON_GetArrayItem(result, cJSON_GetArraySize(result) - 1);
-        message = cJSON_GetObjectItem(message, "channel_post");
+        message = cJSON_GetObjectItem(message, "message");
         if (message == NULL) {
-            message = cJSON_GetObjectItem(message, "channel_post");
+            message = cJSON_GetObjectItem(message, "message");
         }
 
         text = cJSON_GetObjectItem(message, "text");
@@ -496,6 +498,7 @@ static void http_test_task(void *pvParameters) {
     //ESP_LOGW(TAG, "https_telegram_sendMessage_native_get");
     //https_telegram_sendMessage_native_get();
 
+    /*
     if (impreso == 0) {
         ESP_LOGW(TAG, "https_telegram_sendMessage_perform_post");
 
@@ -503,16 +506,12 @@ static void http_test_task(void *pvParameters) {
                 "\n Bienvenido\n Escriba los siguientes comandos:\n'\'bpm pulsaciones\n'\'o2 Oxigeno en sangre\n'\'stats estado general\n'\'gps localizacion");
         impreso = 1;
     }
+    */
 
-    ESP_LOGW(TAG, "Wait 20 second before start");
-    vTaskDelay(20000 / portTICK_PERIOD_MS);
+    ESP_LOGW(TAG, "Wait 5 second before start");
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
 
-    while (1) {
-
-
-        https_telegram_receiveMessage_perform_post();
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
-    }
+    https_telegram_receiveMessage_perform_post();
 
 
     ESP_LOGI(TAG, "Finish http example");

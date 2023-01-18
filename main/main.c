@@ -286,7 +286,7 @@ void ACL2_task(void * pvParams) {
 
         double magnitude = sqrt(resultado_EjeX*resultado_EjeX + resultado_EjeY*resultado_EjeY + resultado_EjeZ*resultado_EjeZ);
         if (magnitude > FALL_THRESHOLD) {
-            ESP_LOGI(TAG, "Posible caída detectada, magnitud de aceleración: %.2f m/s^2", magnitude);
+            ESP_LOGI(TAG, "Posible caída detectada");
             https_telegram_sendMessage_perform_post("Posible caída detectada");
         }
 
@@ -311,7 +311,7 @@ void publishDataNumber(char * key, double number) {
 }
 
 void get_bpm(void* param) {
-    printf("MAX320100 Test\n");
+    ESP_LOGI(tag, "MAX320100 Test\n");
     max30100_data_t result = {};
     while(true) {
         if (client == NULL)
@@ -319,8 +319,9 @@ void get_bpm(void* param) {
         //Update sensor, saving to "result"
         ESP_ERROR_CHECK(max30100_update(&max30100, &result));
         if(result.pulse_detected) {
-            printf("BEAT\n");
-            printf("BPM: %f | SpO2: %f%%\n", result.heart_bpm, result.spO2);
+            //printf("BEAT\n");
+            //printf("BPM: %f | SpO2: %f%%\n", result.heart_bpm, result.spO2);
+            //ESP_LOGI(tag, "[%f,%f]\n",result.heart_bpm, result.spO2);
 
             // Oximeter
             publishDataNumber("SpO2", result.spO2);
@@ -355,57 +356,57 @@ static void log_error_if_nonzero(const char *message, int error_code)
  */
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
-    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
+    //ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
     int msg_id;
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
-        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        //ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3", 0, 1, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+        //ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+        //ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_subscribe(client, "/topic/qos1", 1);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+        //ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos1");
-        ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
+        //ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_DISCONNECTED:
-        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+        //ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
         break;
 
     case MQTT_EVENT_SUBSCRIBED:
-        ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+        //ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
         msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+        //ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
-        ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+        //ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_PUBLISHED:
-        ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+        //ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA:
-        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        //ESP_LOGI(TAG, "MQTT_EVENT_DATA");
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
         break;
     case MQTT_EVENT_ERROR:
-        ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
+        //ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
         if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
             log_error_if_nonzero("reported from esp-tls", event->error_handle->esp_tls_last_esp_err);
             log_error_if_nonzero("reported from tls stack", event->error_handle->esp_tls_stack_err);
             log_error_if_nonzero("captured as transport's socket errno",  event->error_handle->esp_transport_sock_errno);
-            ESP_LOGI(TAG, "Last errno string (%s)", strerror(event->error_handle->esp_transport_sock_errno));
+            //ESP_LOGI(TAG, "Last errno string (%s)", strerror(event->error_handle->esp_transport_sock_errno));
 
         }
         break;
     default:
-        ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+        //ESP_LOGI(TAG, "Other event id:%d", event->event_id);
         break;
     }
 }
@@ -481,10 +482,11 @@ void init_uart(void)
     uart_set_pin(UART, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 }
 
-double divide_by_100(double num) {
-    int int_part = (int) num;  // obtenemos la parte entera
-    int_part /= 100;  // dividimos la parte entera por 100
-    return (double) int_part + (num - (int) num);  // sumamos la parte decimal y retornamos el resultado
+double convert_num_fixed(double num) {
+    int grados = (int) num / 100;
+    double minutos = num - (grados * 100);
+    num = grados + (minutos/60);
+    return num;
 }
 
 static void parse(char * line) {
@@ -520,17 +522,19 @@ static void parse(char * line) {
         */
 
         case MINMEA_SENTENCE_GGA: {
-            ESP_LOGI(tag, "GGA");
+            //ESP_LOGI(tag, "GGA");
             struct minmea_sentence_gga frame_gga;
             if (minmea_parse_gga(&frame_gga, line)) {
+                /*
                 ESP_LOGI(tag, "$xxGGA: Latitude:Longitude %f:%f Time: %d:%d:%d\n",
                          minmea_tofloat(&frame_gga.latitude),
                          minmea_tofloat(&frame_gga.longitude),
                          frame_gga.time.hours,
                          frame_gga.time.minutes,
                          frame_gga.time.seconds);
-                double lat = divide_by_100(((double) minmea_tofloat(&frame_gga.latitude)));
-                double lon = divide_by_100(((double) minmea_tofloat(&frame_gga.longitude)));
+                */
+                double lat = convert_num_fixed(((double) minmea_tofloat(&frame_gga.latitude)));
+                double lon = convert_num_fixed(((double) minmea_tofloat(&frame_gga.longitude)));
                 LATITUD = lat;
                 LONGITUD = lon;
 
@@ -559,7 +563,7 @@ static void parse_line(char *line)
         //ESP_LOGI(tag, "%u>>>>>>>>>>>>>>>> %s",i , p);
         parse(p);
     }
-    ESP_LOGI(tag, "--------------------------------------------------------------");
+    //ESP_LOGI(tag, "--------------------------------------------------------------");
 }
 
 static void rx_task(void *arg)
@@ -588,7 +592,7 @@ void button_task(void *pvParameter) {
 
     while (1) {
         if (gpio_get_level(BUTTON_GPIO) == 1) {
-            //printf("BUTTON TRIGGERED\n");
+            //printf("BOTÓN DE EMERGENCIA ACTIVADO\n");
             https_telegram_sendMessage_perform_post("BOTÓN DE EMERGENCIA ACTIVADO");
             //Esperar a que el botón sea soltado
             //while (gpio_get_level(BUTTON_GPIO) == 0) {};
@@ -639,8 +643,6 @@ void app_main(void)
 
     mqtt_app_start();
 
-
-
     init_uart();
 
     //Start test task
@@ -650,15 +652,18 @@ void app_main(void)
     // SPI
     spi_device_handle_t spi;
     spi = spi_init();
-    xTaskCreate(ACL2_task, "ACL_task", 4096, spi, configMAX_PRIORITIES-2, NULL);
+    xTaskCreate(ACL2_task, "ACL_task", 8192, spi, configMAX_PRIORITIES-2, NULL);
 
     // BPM
     xTaskCreate(get_bpm, "Get BPM", 8192, NULL, configMAX_PRIORITIES-3, NULL);
 
 
     // BUTTON
-    xTaskCreate(button_task, "button_task", 2048, NULL, configMAX_PRIORITIES-1, NULL);
+    xTaskCreate(button_task, "button_task", 8192, NULL, configMAX_PRIORITIES-1, NULL);
 
     // TELEGRAM
-    xTaskCreate(http_test_task, "telegram_task", 8192, NULL, 1, NULL);
+    //xTaskCreate(http_test_task, "telegram_task", 8192, NULL, 1, NULL);
+
+
+    xTaskCreatePinnedToCore(&http_test_task, "http_test_task", 8192*4, NULL, 5, NULL,1);
 }

@@ -32,7 +32,7 @@ static const char *TAG3 = "Sending sendMessage";
 #define ESP_MAXIMUM_RETRY  10
 
 /*Telegram configuration*/
-#define TOKEN "5706622451:AAF4KqztcOCfsle9vx0RhoLodvr1njyxTjY"
+#define TOKEN "5871846278:AAEcEZ5vMRFDzu3DZ08qxwHXmVggLoQIWho"
 char url_string[512] = "https://api.telegram.org/bot";
 // Using in the task strcat(url_string,TOKEN)); the main direct from the url will be in url_string
 //The chat id that will receive the message
