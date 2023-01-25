@@ -294,7 +294,8 @@ static void https_telegram_sendLocation_perform_post(double latitude, double lon
     //const char *post_data = "{\"chat_id\":852596694,\"text\":\"Envio de post\"}";
     char post_data[512] = "";
     //sprintf(post_data,"{\"chat_id\":%s,\"text\":\"%s\"}",chat_ID2, text);
-    sprintf(post_data, "chat_id=%s&latitude=%f&longitude=%f", chat_ID2, latitude, longitude);
+    sprintf(post_data,"{\"chat_id\":%s,\"latitude\":\"%f\",\"longitude\":\"%f\"}",chat_ID2, latitude, longitude);
+    //sprintf(post_data, "chat_id=%s&latitude=%f&longitude=%f", chat_ID2, latitude, longitude);
     //ESP_LOGW(TAG, "El json es es: %s",post_data);
     esp_http_client_set_method(client, HTTP_METHOD_POST);
     esp_http_client_set_header(client, "Content-Type", "application/json");

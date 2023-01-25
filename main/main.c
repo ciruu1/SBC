@@ -327,9 +327,19 @@ void get_bpm(void* param) {
             publishDataNumber("SpO2", result.spO2);
             O2 = result.spO2;
 
+            if (O2 < 90)
+                https_telegram_sendMessage_perform_post("Oxígeno en sangre a menos del 90%");
+            if (O2 < 85)
+                https_telegram_sendMessage_perform_post("CUIDADO\nOxígeno en sangre a menos del 85%");
+
             // BPM
             publishDataNumber("BPM", result.heart_bpm);
             BPM = result.heart_bpm;
+
+            if (BPM < 40)
+                https_telegram_sendMessage_perform_post("Pulsaciones por debajo de 40 BPM");
+            if (BPM > 120)
+                https_telegram_sendMessage_perform_post("Pulsaciones por encima de 120 BPM");
 
         }
         //Update rate: 100Hz
@@ -535,6 +545,11 @@ static void parse(char * line) {
                 */
                 double lat = convert_num_fixed(((double) minmea_tofloat(&frame_gga.latitude)));
                 double lon = convert_num_fixed(((double) minmea_tofloat(&frame_gga.longitude)));
+                if (isnan(lat))
+                    lat = 0;
+                if (isnan(lon))
+                    lon = 0;
+                //printf("LAT,LON: %f, %f", lat, lon);
                 LATITUD = lat;
                 LONGITUD = lon;
 
@@ -647,7 +662,7 @@ void app_main(void)
 
     //Start test task
     // GPS
-    //xTaskCreate(rx_task, "uart_rx_task", 8192, NULL, configMAX_PRIORITIES-4, NULL);
+    xTaskCreate(rx_task, "uart_rx_task", 8192, NULL, configMAX_PRIORITIES-4, NULL);
 
     // SPI
     spi_device_handle_t spi;
