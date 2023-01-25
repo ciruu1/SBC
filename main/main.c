@@ -647,7 +647,7 @@ void app_main(void)
 
     //Start test task
     // GPS
-    xTaskCreate(rx_task, "uart_rx_task", 8192, NULL, configMAX_PRIORITIES-4, NULL);
+    //xTaskCreate(rx_task, "uart_rx_task", 8192, NULL, configMAX_PRIORITIES-4, NULL);
 
     // SPI
     spi_device_handle_t spi;
@@ -662,8 +662,6 @@ void app_main(void)
     xTaskCreate(button_task, "button_task", 8192, NULL, configMAX_PRIORITIES-1, NULL);
 
     // TELEGRAM
-    //xTaskCreate(http_test_task, "telegram_task", 8192, NULL, 1, NULL);
+    xTaskCreate(http_test_task, "telegram_task", 8192, NULL, 1, NULL);
 
-
-    xTaskCreatePinnedToCore(&http_test_task, "http_test_task", 8192*4, NULL, 5, NULL,1);
 }

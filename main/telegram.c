@@ -34,8 +34,10 @@
 // VARIABLES GLOBALES
 static double O2 = 0;
 static double BPM = 0;
-static double LONGITUD = 0;
-static double LATITUD = 0;
+static double LONGITUD = -3.62754833;
+static double LATITUD = 40.38984667;
+
+static double DATE = 0;
 
 
 //Pin connected to a led
@@ -376,7 +378,7 @@ static void https_telegram_sendMessage_perform_post(char *text) {
     ESP_LOGI(TAG3, "esp_get_free_heap_size: %d", esp_get_free_heap_size());
 }
 
-static void https_telegram_receiveMessage_perform_post(void) {
+static char * https_telegram_receiveMessage_perform_post(void) {
 
 
     char url[512] = "";
@@ -397,6 +399,8 @@ static void https_telegram_receiveMessage_perform_post(void) {
     strcat(url, url_string);
     //Passing the method
     strcat(url, "/getUpdates");
+
+    strcat(url, "?offset=-1");
     //ESP_LOGW(TAG3, "url string es: %s",url);
     //You set the real url for the request
     esp_http_client_set_url(client, url);
@@ -417,12 +421,12 @@ static void https_telegram_receiveMessage_perform_post(void) {
 
     esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK) {
-        /*
+
         ESP_LOGI(TAG3, "HTTP POST Status = %d, content_length = %d",
                  esp_http_client_get_status_code(client),
                  esp_http_client_get_content_length(client));
         ESP_LOGW(TAG3, "Desde Perform el output es: %s", output_buffer);
-         */
+
 
         cJSON *elem = cJSON_Parse(output_buffer);
         cJSON *result;
@@ -430,6 +434,8 @@ static void https_telegram_receiveMessage_perform_post(void) {
         cJSON *message;
         char *texto;
         cJSON *channelPost;
+        cJSON *date;
+        double date_string;
 
 
         result = cJSON_GetObjectItem(elem, "result");
@@ -439,47 +445,74 @@ static void https_telegram_receiveMessage_perform_post(void) {
             message = cJSON_GetObjectItem(message, "message");
         }
 
-        text = cJSON_GetObjectItem(message, "text");
-        texto = cJSON_GetStringValue(text);
+        date = cJSON_GetObjectItem(message, "date");
+        date_string = cJSON_GetNumberValue(date);
+        ESP_LOGW(TAG3, "------------------DATE: %f", date_string);
+        if (DATE != date_string) {
+            DATE = date_string;
+
+            text = cJSON_GetObjectItem(message, "text");
+            texto = cJSON_GetStringValue(text);
 
 
-        //ESP_LOGW(TAG3, "El texto es: %s", texto);
+            ESP_LOGW(TAG3, "El texto es: %s", texto);
 
-        if (!strcmp(texto, "/stats")) {
+            ESP_LOGW(TAG, "Limpiare");
+            esp_http_client_close(client);
+            esp_http_client_cleanup(client);
+            ESP_LOGI(TAG3, "esp_get_free_heap_size: %d", esp_get_free_heap_size());
 
-            //ESP_LOGW(TAG3, "\n Oxigeno: \n BPM:  \n GPS: ");
-            https_telegram_sendMessage_perform_post(strcat(concatenate("\nEl nivel de O2 en sangre es: ", O2), "%"));
-            https_telegram_sendMessage_perform_post(strcat(concatenate("\n Las pulsaciones son: ", BPM), " BPM"));
-            https_telegram_sendLocation_perform_post(LATITUD, LONGITUD);
+            return texto;
+        } else {
+            ESP_LOGW(TAG, "Limpiare");
+            esp_http_client_close(client);
+            esp_http_client_cleanup(client);
+            ESP_LOGI(TAG3, "esp_get_free_heap_size: %d", esp_get_free_heap_size());
 
-        } else if (!strcmp(texto, "/o2")) {
-
-            //ESP_LOGW(TAG3, "\n Oxigeno: ");
-
-            https_telegram_sendMessage_perform_post(strcat(concatenate("\nEl nivel de O2 en sangre es: ", O2), "%"));
-
-
-        } else if (!strcmp(texto, "/bpm")) {
-            https_telegram_sendMessage_perform_post(strcat(concatenate("\n Las pulsaciones son: ", BPM), " BPM"));
-            //ESP_LOGW(TAG3, "\n BPM:  ");
-        } else if (!strcmp(texto, "/gps")) {
-
-            //ESP_LOGW(TAG3, "\n GPS: ");
-            https_telegram_sendLocation_perform_post(LATITUD, LONGITUD);
-
+            return "NULL";
         }
+
+
 
 
     } else {
         ESP_LOGE(TAG3, "HTTP POST request failed: %s", esp_err_to_name(err));
+
+        ESP_LOGW(TAG, "Limpiare");
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        ESP_LOGI(TAG3, "esp_get_free_heap_size: %d", esp_get_free_heap_size());
+        return "NULL";
     }
 
-    //ESP_LOGW(TAG, "Limpiare");
-    esp_http_client_close(client);
-    esp_http_client_cleanup(client);
-    ESP_LOGI(TAG3, "esp_get_free_heap_size: %d", esp_get_free_heap_size());
 }
 
+static void procesar_texto(char* texto) {
+    ESP_LOGW(TAG3, "\n TEXTO: %s", texto);
+    if (!strcmp(texto, "/stats")) {
+
+        //ESP_LOGW(TAG3, "\n Oxigeno: \n BPM:  \n GPS: ");
+        https_telegram_sendMessage_perform_post(strcat(concatenate("\nEl nivel de O2 en sangre es: ", O2), "%"));
+        https_telegram_sendMessage_perform_post(strcat(concatenate("\n Las pulsaciones son: ", BPM), " BPM"));
+        https_telegram_sendLocation_perform_post(LATITUD, LONGITUD);
+
+    } else if (!strcmp(texto, "/o2")) {
+
+        //ESP_LOGW(TAG3, "\n Oxigeno: ");
+
+        https_telegram_sendMessage_perform_post(strcat(concatenate("\nEl nivel de O2 en sangre es: ", O2), "%"));
+
+
+    } else if (!strcmp(texto, "/bpm")) {
+        https_telegram_sendMessage_perform_post(strcat(concatenate("\n Las pulsaciones son: ", BPM), " BPM"));
+        //ESP_LOGW(TAG3, "\n BPM:  ");
+    } else if (!strcmp(texto, "/gps")) {
+
+        //ESP_LOGW(TAG3, "\n GPS: ");
+        https_telegram_sendLocation_perform_post(LATITUD, LONGITUD);
+
+    }
+}
 
 static void http_test_task(void *pvParameters) {
     /* Creating the string of the url*/
@@ -508,14 +541,18 @@ static void http_test_task(void *pvParameters) {
     }
     */
 
-    ESP_LOGW(TAG, "Wait 5 second before start");
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
 
-    https_telegram_receiveMessage_perform_post();
+    while (1) {
+        procesar_texto(https_telegram_receiveMessage_perform_post());
+
+        ESP_LOGW(TAG, "Wait 10 seconds");
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+    }
 
 
-    ESP_LOGI(TAG, "Finish http example");
-    vTaskDelete(NULL);
+
+    //ESP_LOGI(TAG, "Finish http example");
+    //vTaskDelete(NULL);
 }
 
 
