@@ -460,18 +460,6 @@ static void mqtt_app_start(void)
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
 
-    /*
-    // Crear json que se quiere enviar al ThingsBoard
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "key", 0.336); // En la telemetría de Thingsboard aparecerá key = key y value = 0.336
-    char *post_data = cJSON_PrintUnformatted(root);
-
-    // Enviar los datos
-    esp_mqtt_client_publish(client, "v1/devices/me/telemetry", post_data, 0, 1, 0); // v1/devices/me/telemetry sale de la MQTT Device API Reference de ThingsBoard
-    cJSON_Delete(root);
-    // Free is intentional, it's client responsibility to free the result of cJSON_Print
-    free(post_data);
-    */
 }
 
 
@@ -500,36 +488,7 @@ double convert_num_fixed(double num) {
 }
 
 static void parse(char * line) {
-    /*
-    if (minmea_check(line, false)) {
-        printf("TRUE");
-    }
-    */
     switch(minmea_sentence_id(line, false)) {
-        /*
-        case MINMEA_SENTENCE_RMC:
-            ESP_LOGI(tag, "RMC");
-            ESP_LOGD(tag, "Sentence - MINMEA_SENTENCE_RMC");
-            struct minmea_sentence_rmc frame_rmc;
-            if (minmea_parse_rmc(&frame_rmc, line)) {
-                ESP_LOGD(tag, "$xxRMC: raw coordinates and speed: (%d/%d,%d/%d) %d/%d",
-                         frame_rmc.latitude.value, frame_rmc.latitude.scale,
-                         frame_rmc.longitude.value, frame_rmc.longitude.scale,
-                         frame_rmc.speed.value, frame_rmc.speed.scale);
-                ESP_LOGD(tag, "$xxRMC fixed-point coordinates and speed scaled to three decimal places: (%d,%d) %d",
-                         minmea_rescale(&frame_rmc.latitude, 1000),
-                         minmea_rescale(&frame_rmc.longitude, 1000),
-                         minmea_rescale(&frame_rmc.speed, 1000));
-                ESP_LOGD(tag, "$xxRMC floating point degree coordinates and speed: (%f,%f) %f",
-                         minmea_tocoord(&frame_rmc.latitude),
-                         minmea_tocoord(&frame_rmc.longitude),
-                         minmea_tofloat(&frame_rmc.speed));
-            }
-            else {
-                ESP_LOGD(tag, "$xxRMC sentence is not parsed\n");
-            }
-            break;
-        */
 
         case MINMEA_SENTENCE_GGA: {
             //ESP_LOGI(tag, "GGA");
